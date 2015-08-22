@@ -1,0 +1,148 @@
+---
+title: "Predicting the Manner which Unilateral Dumbbell Biceps Curls (Bar Bell Lifts) Were Performed"
+output:
+  html_document: 
+    keep_md: yes
+---
+
+## **Summary** 
+The objective of the project is to construct a model to predict the manner which Unilateral Dumbbell Biceps Curls (barbell lifts) were performed. The set of data being used to contruct the model was based on data collected from accelerometers on the belt, forearm, arm and dumbbells of the 6 participants who were asked to perform the barbell lifts. 
+
+Attributes used for book keeping purposes as well as attributes with more than 95% NAs were removed from the training of the model. Next, the Random Forests method was used to used to train the model and a data set was held out using random subsampling to be used to cross validate the final model built. 
+
+As the Random Forests model constructed gave an estimated out of sample accuracy of over 99%, the model was chosen to predict the outcome of the 20 test cases. 
+
+The model was able to accurately predict 20 times out of the 20 test cases. 
+
+## **Loading Required Libraries**
+```{r,warning=FALSE, message=FALSE}
+library(caret)
+```
+
+## **Data Cleansing and Exploration**
+
+**Read and Explore Data**
+
+We will first read the data from the training set (pml-training.csv) and look at a summary of the data. 
+```{r}
+# Read the CSV file in the working directory
+data <- read.csv("pml-training.csv", na.strings=c("#DIV/0","#DIV/0!","NA"))
+```
+```{r, eval=FALSE}
+summary(data)
+```
+
+**Cleanse Data**
+
+We notice that there are attributes used for book keeping purposes such as user_name, raw_timestamp_part_1. We will proceed to remove these attributes from the data set to exclude them from the model. Refer to Appendix 1 - Summary of Data for the detailed output. 
+
+```{r}
+# Remove columns timestamps and identifiers (eg. ID) columns
+data <- data[,c(-1:-7)]
+```
+
+We also notice that some attributes such as kurtosis_roll_belt and min_roll_belt contains a large number of NAs. We will create a function to calculate the percentage of NAs in an attribute and proceed to remove the attributes with more than 95% NAs from the data set. 
+
+```{r}
+# Create a function to check for % NA values in the respective columns
+# Returns a data frame of the number of NA rows, number of rows, and % NA
+CalcNA <- function(data){
+        percentageNA <- apply(data,2,FUN=function(x) sum(is.na(x))/length(x))
+        countNA <- apply(data,2,FUN=function(x) sum(is.na(x)))
+        countRow <- apply(data,2,FUN=function(x) length(x))
+        result <- data.frame(cbind(countNA,cbind(countRow,percentageNA)))
+        return(result)
+}
+
+result <- CalcNA(data)
+includedCol = rownames(result[result$percentageNA<=0.95,])
+
+data <- data[,includedCol]
+```
+
+## **Training the Model**
+The seed was set so that the results of the model can be reproduced. The training data set was further split into *train* and *traintest* by random subsampling the training data set. *traintest* will later be used to evaluate the final model. The model is trained using the Random Forests method and using all other attributes to predict the attribute classe. 5-fold Cross Validation was also used in the training of the model by specifying it in the trainControl function. 
+
+```{r, message=FALSE}
+# Setting the seed for reproducibility
+set.seed(123)
+
+# Split the data set into 60 / 40 for the training and test data set
+inTrain <- createDataPartition(y=data$classe, p=0.6, list=FALSE)
+train <- data[inTrain,]
+traintest <- data[-inTrain,]
+
+# Specifing trainControl and training the model
+trainCtrl <- trainControl(method="cv", number=5)
+set.seed(456)
+model <- train(classe~.,method="rf", data=train, trControl=trainCtrl)
+
+# (Optional) - Save the model onto disk and be able to load the model in future without training the model again. 
+# saveRDS(model,"model_rf.rds")
+
+# (Optional) - If the model was saved, read the saved model using readRDS. 
+# model <- readRDS("model_rf.rds")
+```
+
+## **Cross Validation and Out of Sample Error Rate Estimation**
+As a test set (random subsampled from the training set, *traintest*) had been held out for the final evaluation, we will be using model to predict the outcome. The result is stored in the *outcome* variable. This ensures that the samples used to evaluate the model were not used for training the model. The Confusion Matrix is shown in the Figure 1 - Confusion Matrix.
+```{r, message=FALSE}
+# Use the model to predict the classe variable
+outcome <- predict(model, traintest)
+
+# Use a Confusion Matrix to assess the performance of the model
+cm <- confusionMatrix(outcome,traintest$classe)
+```
+
+**Figure 1 - Confusion Matrix**
+```{r}
+cm
+```
+
+**The Out of Sample Error Rate estimate is given by:**
+```{r}
+errorRateEstimate <- as.vector(1 - confusionMatrix(outcome,traintest$classe)$overall[1])
+errorRateEstimate
+```
+
+As the model constructed has an out of sample error estimate of less than 1%, fitting other models or tuning the existing model will not result in substantial improvement in accuracy. As such, the model will be used to predict the test cases. 
+
+## **Predicting the Test Cases**
+Here, we first read in the test data and predict the outcome using the model constructed above. The predicted outcomes are shown in Figure 2 - Predicted Outcomes of Test Cases. 
+```{r}
+# Read the test data for submission
+submissionData <- read.csv("pml-testing.csv", na.strings=c("#DIV/0","#DIV/0!","NA"))
+
+# Predict the outcome
+finalOutcome <- predict(model, submissionData)
+finalOutcome <- as.vector(finalOutcome)
+```
+
+**Figure 2 - Predicted Outcomes of Test Cases**
+```{r}
+finalOutcome
+```
+
+## **Output the Predictions for the 20 Test Cases**
+```{r}
+# Write the outcome to files for submission
+pml_write_files = function(x){
+        n = length(x)
+        for(i in 1:n){
+                filename = paste0("outcome/problem_id_",i,".txt")
+                write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+        }
+}
+
+pml_write_files(finalOutcome)
+
+```
+
+***
+## **Appendix 1 - Summary of Data**
+
+**Figure 3 - Summary of Data**
+
+``` {r}
+summary(data)
+```
