@@ -30,9 +30,11 @@ data <- read.csv("pml-training.csv", na.strings=c("#DIV/0","#DIV/0!","NA"))
 summary(data)
 ```
 
+Refer to Appendix 1 - Summary of Data for the detailed output. 
+
 **Cleanse Data**
 
-We notice that there are attributes used for book keeping purposes such as user_name, raw_timestamp_part_1. We will proceed to remove these attributes from the data set to exclude them from the model. Refer to Appendix 1 - Summary of Data for the detailed output. 
+We notice that there are attributes used for book keeping purposes such as user_name, raw_timestamp_part_1. We will proceed to remove these attributes from the data set to exclude them from the model. 
 
 
 ```r

@@ -82,8 +82,9 @@ img {
 <pre class="r"><code># Read the CSV file in the working directory
 data &lt;- read.csv(&quot;pml-training.csv&quot;, na.strings=c(&quot;#DIV/0&quot;,&quot;#DIV/0!&quot;,&quot;NA&quot;))</code></pre>
 <pre class="r"><code>summary(data)</code></pre>
+<p>Refer to Appendix 1 - Summary of Data for the detailed output.</p>
 <p><strong>Cleanse Data</strong></p>
-<p>We notice that there are attributes used for book keeping purposes such as user_name, raw_timestamp_part_1. We will proceed to remove these attributes from the data set to exclude them from the model. Refer to Appendix 1 - Summary of Data for the detailed output.</p>
+<p>We notice that there are attributes used for book keeping purposes such as user_name, raw_timestamp_part_1. We will proceed to remove these attributes from the data set to exclude them from the model.</p>
 <pre class="r"><code># Remove columns timestamps and identifiers (eg. ID) columns
 data &lt;- data[,c(-1:-7)]</code></pre>
 <p>We also notice that some attributes such as kurtosis_roll_belt and min_roll_belt contains a large number of NAs. We will create a function to calculate the percentage of NAs in an attribute and proceed to remove the attributes with more than 95% NAs from the data set.</p>
